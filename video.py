@@ -6,10 +6,10 @@
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import hashlib
 import io
-import logging
 import os
 import re
 import tempfile
@@ -22,7 +22,7 @@ from typing import Any
 
 import httpx
 
-logger = logging.getLogger("bili-arona")
+from astrbot.api import logger  # 用 AstrBot 统一的日志器，插件规范要求
 
 # 语音转写缺依赖时只提醒一次，别每条视频刷一遍
 _WHISPER_WARNED = False
@@ -630,7 +630,9 @@ class VideoReader:
         # 先把声音转成文字，再抽帧（抽完就把视频删了）
         if transcribe and path is not None:
             try:
-                out.script = self.transcribe(path, whisper_model)
+                # 转写是纯 CPU 活，跑在事件循环里会把这几十秒全堵死，
+                # 丢线程池去跑，界面和聊天才不会被它冻住
+                out.script = await asyncio.to_thread(self.transcribe, path, whisper_model)
             except Exception:
                 out.script = []
             if out.script:

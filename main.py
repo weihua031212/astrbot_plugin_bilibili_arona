@@ -19,14 +19,14 @@ from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.star import Context, Star, register
 from astrbot.core.star.filter.command import GreedyStr
 
-from . import instance, store
+from . import instance, store, paths
 from .bili import BiliClient, BiliError, Comment, Video, extract_bvid, parse_cookie_string
 
 PLUGIN_NAME = "astrbot_plugin_bilibili_arona"
-PLUGIN_VERSION = "0.4.0"
+PLUGIN_VERSION = "0.4.1"
 PLUGIN_DESC = "bili看看：看 B 站视频、在评论区说一句、觉得好就 @ 你；别人的回复先排队，你点头才发。"
 
-COOKIE_FILE = Path(__file__).parent / "data" / "cookies.json"
+COOKIE_FILE = paths.path("cookies.json")
 
 # 一眼就是任务/指令的评论，不排队
 TASK_PATTERNS = [
@@ -601,7 +601,7 @@ class BilibiliAronaPlugin(Star):
                 import base64
                 from pathlib import Path as _Path
 
-                folder = _Path(__file__).parent / "data" / "sheets"
+                folder = paths.path("sheets")
                 folder.mkdir(parents=True, exist_ok=True)
                 f = folder / f"{v.bvid}.jpg"
                 f.write_bytes(base64.b64decode(w.sheet_b64.split(",", 1)[1]))
@@ -774,7 +774,7 @@ class BilibiliAronaPlugin(Star):
             import json as _j
             from pathlib import Path as _P3
 
-            fp = _P3(__file__).parent / "data" / "vision_debug.json"
+            fp = paths.path("vision_debug.json")
             rows = []
             if fp.exists():
                 try:
@@ -1194,7 +1194,7 @@ class BilibiliAronaPlugin(Star):
             keep = int(self.config.get("roam_keep", 5) or 5)
             brief = brief[: max(3, keep)]
 
-        qf = _P(__file__).parent / "data" / "roam_queue.json"
+        qf = paths.path("roam_queue.json")
         qf.write_text(
             _json.dumps({"at": int(__import__("time").time()), "items": brief}, ensure_ascii=False, indent=2),
             encoding="utf-8",
@@ -1209,7 +1209,7 @@ class BilibiliAronaPlugin(Star):
         # 挑出来的这些先真看一遍：字幕、弹幕、热评都取到，抽帧拼图存成文件，
         # 整理成材料一并交给我。我拿到的是看过的东西，不是一串标题。
         look_n = min(3, len(brief)) if self.config.get("read_video", True) else 0
-        frame_dir = _P(__file__).parent / "data" / "roam_frames"
+        frame_dir = paths.path("roam_frames")
         for b in brief[:look_n]:
             try:
                 m = await self.gather_material(b["bvid"])
@@ -1355,7 +1355,7 @@ class BilibiliAronaPlugin(Star):
     def _daily_state_path(self):
         from pathlib import Path
 
-        return Path(__file__).parent / "data" / "daily_state.json"
+        return paths.path("daily_state.json")
 
     def _daily_state(self) -> dict:
         import json
@@ -2157,7 +2157,7 @@ class BilibiliAronaPlugin(Star):
             since = float((st.get("roam_watch") or {}).get("since") or 0)
             if not since:
                 return
-            qf = Path(__file__).parent / "data" / "roam_queue.json"
+            qf = paths.path("roam_queue.json")
             if not qf.exists():
                 return
             q = _json.loads(qf.read_text(encoding="utf-8-sig"))

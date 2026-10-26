@@ -10,7 +10,9 @@ import time
 from pathlib import Path
 from typing import Any
 
-DATA = Path(__file__).parent / "data"
+from . import paths
+
+DATA = paths.DATA_DIR
 
 DIARY = "diary.jsonl"
 SUMMON = "summons.jsonl"

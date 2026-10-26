@@ -55,7 +55,7 @@
 
 拿 Cookie 的步骤（非必要）：浏览器打开 bilibili.com 并登录，按 F12，切到 Network，随便点一个请求，在请求头里找到 Cookie 那一整行，整段复制。
 
-Cookie 存在插件目录的 data/cookies.json 里，只在本机，别把这个文件发给别人。
+Cookie 存在 AstrBot 的 data/plugin_data/astrbot_plugin_bilibili_arona/cookies.json 里，只在本机，别把这个文件发给别人，也别跟着插件目录一起分发。
 
 ## 被召唤（只有账号主人能叫得动）
 
@@ -90,7 +90,7 @@ Cookie 存在插件目录的 data/cookies.json 里，只在本机，别把这个
 - panel.py：控制面板后端接口
 - main.py：命令与流程
 - pages/panel/index.html：面板页面
-- data/：运行时生成
+- data/plugin_data/astrbot_plugin_bilibili_arona/：运行时数据（Cookie、草稿、日记、留言箱）。旧版本存在插件目录的 data/ 下，升级时插件会自动复制到新位置，原件保留
 
 ## 模型与连接
 

@@ -7,7 +7,9 @@ import time
 from pathlib import Path
 from typing import Any
 
-DATA_DIR = Path(__file__).parent / "data"
+from . import paths
+
+DATA_DIR = paths.DATA_DIR
 
 
 def _ensure() -> None:

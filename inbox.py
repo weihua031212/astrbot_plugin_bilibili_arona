@@ -5,14 +5,17 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import time
 from pathlib import Path
 from typing import Any
 
+from . import paths
+
 BASE = Path(__file__).parent
-INBOX = BASE / "data" / "inbox.json"
-SEEN = BASE / "data" / "inbox_seen.json"
+INBOX = paths.path("inbox.json")
+SEEN = paths.path("inbox_seen.json")
 
 
 def _load(path: Path, default: Any) -> Any:
@@ -186,7 +189,7 @@ def stamp(item: dict[str, Any]) -> str:
         return ""
     return time.strftime("%m-%d %H:%M", time.localtime(ts))
 
-MY_COMMENTS = BASE / "data" / "my_comments.json"
+MY_COMMENTS = paths.path("my_comments.json")
 
 
 def my_comments() -> list[dict[str, Any]]:
@@ -256,17 +259,21 @@ async def fetch_replies(client: Any, records: list[dict[str, Any]], my_mid: int)
     added: list[dict[str, Any]] = []
 
     repaired = False
-    for rec in records:
+
+    async def _check_one(rec: dict[str, Any]) -> list[dict[str, Any]]:
+        """查一条我发过的评论下面有没有人回我，返回这楼里新冒出来的留言。"""
+        nonlocal repaired
+        local: list[dict[str, Any]] = []
         oid = rec.get("oid") or rec.get("aid")
         root = int(rec.get("rpid") or 0)
         ctype = int(rec.get("type") or 1)
         if not oid:
-            continue
+            return local
         if not root:
             # 编号丢了，去评论区认回来，认到就顺手把档案补上
             root = await refind_root(client, oid, ctype, int(my_mid or 0), rec.get("bvid") or "")
             if not root:
-                continue
+                return local
             rec["rpid"] = root
             repaired = True
         try:
@@ -277,7 +284,7 @@ async def fetch_replies(client: Any, records: list[dict[str, Any]], my_mid: int)
             )
             data = (r.json() or {}).get("data") or {}
         except Exception:
-            continue
+            return local
         # 楼中楼在 data.root.replies 里，顶层 replies 一直是空的
         root_obj = data.get("root") or {}
         pool = (data.get("replies") or []) + (root_obj.get("replies") or [])
@@ -297,7 +304,7 @@ async def fetch_replies(client: Any, records: list[dict[str, Any]], my_mid: int)
             key = f"rep:{oid}:{s.get('rpid')}"
             if key in seen or key in known:
                 continue
-            added.append(
+            local.append(
                 {
                     "key": key,
                     "kind": "reply",
@@ -313,6 +320,22 @@ async def fetch_replies(client: Any, records: list[dict[str, Any]], my_mid: int)
                     "from_owner": mid == int(my_mid or 0),
                 }
             )
+        return local
+
+    # 一条一条串着查的话，三十条就是二十秒，这二十秒里整个 bot 别的活全干不了，
+    # 聊天消息只能在门口排队。改成一起发出去，几秒就完事；
+    # 开五个闸门是为了别把 B 站惹毛，同时发三十个请求容易被当成刷接口。
+    gate = asyncio.Semaphore(5)
+
+    async def _guarded(rec: dict[str, Any]) -> list[dict[str, Any]]:
+        async with gate:
+            try:
+                return await _check_one(rec)
+            except Exception:
+                return []
+
+    for part in await asyncio.gather(*[_guarded(r) for r in records]):
+        added.extend(part)
 
     if repaired:
         save_my_comments(records)

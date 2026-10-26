@@ -6,7 +6,6 @@
 
 from __future__ import annotations
 
-import logging
 
 import json
 import random
@@ -15,12 +14,14 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-logger = logging.getLogger("bili-arona")
+from astrbot.api import logger  # 用 AstrBot 统一的日志器，插件规范要求
+
+from . import paths
 
 BASE = Path(__file__).parent
-LOG = BASE / "data" / "nurture_log.jsonl"
-PICK = BASE / "data" / "nurture_pick.json"
-PARTS_FILE = BASE / "data" / "nurture_parts.json"
+LOG = paths.path("nurture_log.jsonl")
+PICK = paths.path("nurture_pick.json")
+PARTS_FILE = paths.path("nurture_parts.json")
 
 DEFAULTS = {"view": 12, "like": 10, "coin": 2, "share": 1}
 

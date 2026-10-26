@@ -10,6 +10,8 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
+from . import paths
+
 import httpx
 
 UA = (
@@ -40,7 +42,7 @@ def known_emotes() -> set[str]:
         return _EMOTES
     doc: dict[str, Any] = {}
     try:
-        f = Path(__file__).parent / "data" / "emotes.json"
+        f = paths.path("emotes.json")
         doc = json.loads(f.read_text(encoding="utf-8"))
     except Exception:
         doc = {}
