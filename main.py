@@ -23,7 +23,7 @@ from . import instance, store, paths
 from .bili import BiliClient, BiliError, Comment, Video, extract_bvid, parse_cookie_string
 
 PLUGIN_NAME = "astrbot_plugin_bilibili_arona"
-PLUGIN_VERSION = "0.4.2"
+PLUGIN_VERSION = "0.4.3"
 PLUGIN_DESC = "bili看看：看 B 站视频、在评论区说一句、觉得好就 @ 你；别人的回复先排队，你点头才发。"
 
 COOKIE_FILE = paths.path("cookies.json")
