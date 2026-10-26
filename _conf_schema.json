@@ -1,0 +1,196 @@
+{
+  "owner_mid": {
+    "type": "int",
+    "description": "账号主人的 B 站 UID。评论里要 @ 的就是这个人，召唤也只认他。",
+    "default": 0,
+    "invisible": true
+  },
+  "owner_name": {
+    "type": "string",
+    "description": "账号主人的 B 站昵称，必须和主页显示的一致，@ 才点得亮。",
+    "default": "",
+    "invisible": true
+  },
+  "reply_requires_confirm": {
+    "type": "bool",
+    "description": "别人来找我说话时，先拟一版给账号主人过目，确认后才发出去。",
+    "hint": "建议保持开启。",
+    "default": true,
+    "invisible": true
+  },
+  "read_video": {
+    "type": "bool",
+    "description": "备素材时真的读画面：下载视频抽帧拼图，连字幕和弹幕一起留下来供分析。",
+    "hint": "关掉就只读标题、简介和评论。开着更准，但每期会多花几十秒和一点流量。",
+    "default": true,
+    "invisible": true
+  },
+  "max_frames": {
+    "type": "int",
+    "description": "抽帧张数上限。12 帧大约每 15 到 20 秒一张，够看走势；8 帧最省，20 帧以上更细但字更小。",
+    "hint": "推荐 12。整张拼图会被压到 1024 像素宽，帧越多图越密、字越小。",
+    "default": 12,
+    "invisible": true
+  },
+  "timeout_seconds": {
+    "type": "int",
+    "description": "请求 B 站接口的超时秒数。",
+    "default": 20,
+    "invisible": true
+  },
+  "summon_enabled": {
+    "type": "bool",
+    "description": "允许账号主人在评论区 @ 助手召唤她来看视频。只有配置里的 owner_mid 那个人能召唤，别人 @ 一律不理会。",
+    "default": false,
+    "invisible": true
+  },
+  "summon_poll_seconds": {
+    "type": "int",
+    "description": "多久查一次「@我的」消息，单位秒，最小 60。查得勤不花 token，没被叫就一直安静。",
+    "default": 60,
+    "invisible": true
+  },
+  "provider_id": {
+    "type": "string",
+    "description": "审核别人评论时用哪个大模型，填模型提供商里的 ID，比如 deepseek-flash/deepseek-flash。留空就自动挑当前可用的。",
+    "hint": "插件只有审核这一步还调模型，写评论和发评论都由我本人来。",
+    "default": "",
+    "invisible": true
+  },
+  "inbox_watch_enabled": {
+    "type": "bool",
+    "description": "插件自己盯着动态评论和私信，一有新消息就提醒助手本人去看，不再靠定时任务叫醒。",
+    "hint": "关掉就彻底不看收件箱了。",
+    "default": true,
+    "invisible": true
+  },
+  "inbox_poll_seconds": {
+    "type": "int",
+    "description": "多久查一次收件箱，单位秒，最小 120。查得勤不花 token，只有真收到消息那一次才会叫醒助手。",
+    "default": 300,
+    "invisible": true
+  },
+  "daily_enabled": {
+    "type": "bool",
+    "description": "打开插件里的每日定时（养号和写小日记）。",
+    "default": true,
+    "invisible": true
+  },
+  "nurture_enabled": {
+    "type": "bool",
+    "description": "每天自己刷一轮号：看视频、点赞、投币、分享。纯请求，不花 token。",
+    "default": false,
+    "invisible": true
+  },
+  "nurture_hour": {
+    "type": "int",
+    "description": "几点开始养号，填 0 到 23，到点后当天只跑一次。",
+    "hint": "晚上人少的时候跑更稳，推荐 20。",
+    "default": 20,
+    "invisible": true
+  },
+  "nurture_view_limit": {
+    "type": "int",
+    "description": "一轮看几条视频。",
+    "default": 12,
+    "invisible": true
+  },
+  "nurture_like_limit": {
+    "type": "int",
+    "description": "一天最多点几个赞。",
+    "default": 10,
+    "invisible": true
+  },
+  "nurture_coin_limit": {
+    "type": "int",
+    "description": "一天最多投几个币。",
+    "default": 2,
+    "invisible": true
+  },
+  "nurture_share_limit": {
+    "type": "int",
+    "description": "一天最多分享几次。",
+    "default": 1,
+    "invisible": true
+  },
+  "diary_enabled": {
+    "type": "bool",
+    "description": "每天到点提醒我写一条小日记当动态（内容由我自己写，插件只负责提醒和给素材）。",
+    "default": false,
+    "invisible": true
+  },
+  "diary_hour": {
+    "type": "int",
+    "description": "几点提醒写小日记，填 0 到 23。",
+    "default": 21,
+    "invisible": true
+  },
+  "verify_online": {
+    "type": "bool",
+    "description": "拿不准就联网核实：视频标题提到的 AI 圈动向、新东西，或别人在评论、私信、楼中楼里说的内容，摸不准就查一下再回。",
+    "default": true,
+    "invisible": true
+  },
+  "whisper_enabled": {
+    "type": "bool",
+    "description": "读片时把视频里的语音转成文字当主干，比只看画面准得多。本地跑，不花钱，但每条会多花几十秒。",
+    "default": false,
+    "invisible": true
+  },
+  "whisper_model": {
+    "type": "string",
+    "description": "转写用多大的模型：tiny 最快但糙，base 折中，small 推荐，medium 最准但明显慢。",
+    "default": "small",
+    "invisible": true
+  },
+  "roam_enabled": {
+    "type": "bool",
+    "description": "打开自主游览：到点我自己去刷片，看得上就评论，碰到特别有意思的才艾特账号主人。",
+    "default": false,
+    "invisible": true
+  },
+  "roam_interval_hours": {
+    "type": "int",
+    "description": "自主游览隔几小时跑一轮，填 1 到 24。填 2 就是每两小时主动去刷一次片。",
+    "default": 2,
+    "invisible": true
+  },
+  "roam_start_hour": {
+    "type": "int",
+    "description": "最早几点开始跑，0 到 23。填 8 就是八点以前不打扰，八点以后按间隔跑。",
+    "hint": "填 8 表示八点前不跑",
+    "default": 8,
+    "invisible": true
+  },
+  "roam_per_day": {
+    "type": "int",
+    "description": "一天最多逛几轮，0 表示不限。",
+    "default": 0,
+    "invisible": true
+  },
+  "roam_audit": {
+    "type": "bool",
+    "description": "筛出来的片子先让审核模型过一遍，广告、带货、引流这类直接略过，不送到我面前。",
+    "default": true,
+    "invisible": true
+  },
+  "roam_keep": {
+    "type": "int",
+    "description": "审核过之后留几条候选给我挑。剩七八条就够挑了，不用堆几十条。",
+    "default": 8,
+    "invisible": true
+  },
+  "history_limit": {
+    "type": "int",
+    "description": "被叫醒的时候，顺带读几条咱们最近的对话，好让我接得上话头。",
+    "hint": "填 0 就不读，最多 15 条，默认 8 条。",
+    "default": 8,
+    "invisible": true
+  },
+  "vision_provider": {
+    "type": "string",
+    "description": "让哪个模型看画面",
+    "hint": "抽出来的帧图交给这个模型读成文字，我才看得到画面内容。留空就用 AstrBot 里配置的默认识图模型；把「真的看画面」关掉时不会调用。",
+    "default": ""
+  }
+}

@@ -1,0 +1,18 @@
+# 运行时数据：登录凭证、评论记录、日记、抽帧图全在这里，绝不提交
+data/
+*.log
+
+# Python 缓存
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# 改动前留的备份
+*.bak
+*.bak_*
+
+# 系统杂物
+.DS_Store
+Thumbs.db

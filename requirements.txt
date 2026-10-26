@@ -1,0 +1,7 @@
+httpx>=0.24
+qrcode>=7.4
+Pillow>=9.0
+opencv-python>=4.5
+
+# 可选：本地把说话声转成文字，不装也能用，只是不做语音转写
+# faster-whisper>=1.0
