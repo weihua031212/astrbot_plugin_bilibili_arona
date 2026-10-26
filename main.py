@@ -23,7 +23,7 @@ from . import instance, store, paths
 from .bili import BiliClient, BiliError, Comment, Video, extract_bvid, parse_cookie_string
 
 PLUGIN_NAME = "astrbot_plugin_bilibili_arona"
-PLUGIN_VERSION = "0.4.1"
+PLUGIN_VERSION = "0.4.2"
 PLUGIN_DESC = "bili看看：看 B 站视频、在评论区说一句、觉得好就 @ 你；别人的回复先排队，你点头才发。"
 
 COOKIE_FILE = paths.path("cookies.json")
@@ -132,6 +132,8 @@ class BilibiliAronaPlugin(Star):
     async def initialize(self) -> None:
         """插件一加载就开始盯评论区，不用等账号主人先发命令。"""
         self.remember_umo(store.get_last_umo())
+        # 上次可能留了没跑掉的叫醒任务，开机先扫一遍，别让它一直挂着抢会话
+        await self._clear_stale_wakes()
         self.ensure_watcher()
         self.ensure_inbox_watcher()
         self.ensure_daily_watcher()
@@ -629,7 +631,7 @@ class BilibiliAronaPlugin(Star):
             "at_id": int(at_id or 0),
             "at_time": int(at_time or 0),
             "at_text": (at_text or "").strip(),
-            "created": int(__import__("time").time()),
+            "created": int(time.time()),
         }
         store.add_task(task)
         store.add_audit("summon_prepared", bvid=v.bvid, title=v.title, frames=len(task["frames"]))
@@ -1196,7 +1198,7 @@ class BilibiliAronaPlugin(Star):
 
         qf = paths.path("roam_queue.json")
         qf.write_text(
-            _json.dumps({"at": int(__import__("time").time()), "items": brief}, ensure_ascii=False, indent=2),
+            _json.dumps({"at": int(time.time()), "items": brief}, ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
         for b in brief:
@@ -1543,6 +1545,39 @@ class BilibiliAronaPlugin(Star):
         except RuntimeError:
             self._daily_watcher = None
 
+    async def _clear_stale_wakes(self) -> None:
+        """叫醒前先扫一遍残留的一次性任务。
+
+        这种任务建完三秒就该跑掉，跑掉就该消失。真出了岔子（创建时正好在忙、
+        调度错过了）它会一直留在列表里，时间停在过去，之后被反复捡起来，
+        每捡一次都要占一回会话。占着的时候老师发消息就只能排队，看起来像我不理人。
+        所以每次新建之前，把超过两分钟还没跑或者跑过没清掉的都删干净。
+        """
+        from datetime import datetime, timedelta
+
+        try:
+            jobs = await self.context.cron_manager.list_jobs()
+        except Exception as exc:
+            logger.debug(f"[bili-arona] 读任务列表失败，跳过清理: {exc}")
+            return
+        now = datetime.now().astimezone()
+        for job in jobs:
+            try:
+                if getattr(job, "name", "") != "bili-arona-wake":
+                    continue
+                nxt = getattr(job, "next_run_time", None)
+                stale = False
+                if nxt is not None and now - nxt.astimezone(now.tzinfo) > timedelta(minutes=2):
+                    stale = True
+                if getattr(job, "last_run_time", None):
+                    stale = True
+                if not stale:
+                    continue
+                await self.context.cron_manager.delete_job(job.job_id)
+                logger.info(f"[bili-arona] 清掉残留的叫醒任务 {job.job_id}")
+            except Exception as exc:
+                logger.debug(f"[bili-arona] 清理叫醒任务失败: {exc}")
+
     async def wake_me(self, note: str) -> None:
         """真正叫醒我一次：走 cron 主动唤醒，我收到就得动手，不是发条通知就算。"""
         from datetime import datetime, timedelta
@@ -1569,6 +1604,7 @@ class BilibiliAronaPlugin(Star):
                 f"{note}\n\n【这是咱们刚才的对话，只用来对齐语气、接上话头。"
                 "别复述它，也别把它当成新任务】\n" + chat
             )
+        await self._clear_stale_wakes()
         try:
             await self.context.cron_manager.add_active_job(
                 name="bili-arona-wake",
@@ -2096,12 +2132,27 @@ class BilibiliAronaPlugin(Star):
         store.add_audit("dynamic_sent", dyn_id=dyn_id, chars=len(echoed or body))
         link = f"https://t.bilibili.com/{dyn_id}" if dyn_id else ""
         if day:
+            # 这一步以前用一个大 try 裹着，失败了也只在异常时吭一声。
+            # 结果就是发出去了、日记还挂着未发布，面板上看不出来，日志里也翻不到。
+            # 现在拆开：导入失败、抛错、返回 False 三种情况都留痕。
             try:
                 from . import records as _rec_dy
-
-                _rec_dy.diary_set_posted(day, True, dyn_id)
             except Exception as exc:
-                logger.warning(f"[bili-arona] 日记状态没标上: {exc}")
+                _rec_dy = None
+                logger.warning(
+                    f"[bili-arona] 载入日记记录模块失败，{day} 没法标成已发布: {exc}"
+                )
+            if _rec_dy is not None:
+                try:
+                    marked = bool(_rec_dy.diary_set_posted(day, True, dyn_id))
+                except Exception as exc:
+                    marked = False
+                    logger.warning(f"[bili-arona] 给 {day} 标已发布时抛错: {exc}")
+                if not marked:
+                    logger.warning(
+                        f"[bili-arona] {day} 没标成已发布，日记里可能没有这一天，"
+                        "面板上会一直显示未发布"
+                    )
         try:
             st = self._daily_state()
             st["diary_notice"] = day or st.get("diary_notice")

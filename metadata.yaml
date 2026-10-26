@@ -3,7 +3,7 @@ display_name: bili看看
 desc: "自己出去刷 B 站，挑着看、在评论区说一句，觉得好就 @ 你；别人搭话先排队，你点头才回。养号、写日记、看片都按你设的点来，只在真有新动静时叫醒你，空跑不发声。"
 short_desc: "自己刷 B 站、评一句、有人搭话先排队等你点头。"
 author: arona
-version: 0.4.1
+version: 0.4.2
 repo: https://github.com/weihua031212/astrbot_plugin_bilibili_arona
 astrbot_version: ">=4.16,<5"
 support_platforms:

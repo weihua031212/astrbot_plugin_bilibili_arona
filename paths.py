@@ -54,15 +54,13 @@ def _migrate(old: Path, new: Path) -> None:
 def _pick() -> Path:
     root = _plugin_data_root()
     if root is None:
-        # 拿不到规范目录就退回老位置，功能优先
-        LEGACY_DIR.mkdir(parents=True, exist_ok=True)
-        return LEGACY_DIR
+        # 拿不到 AstrBot 的数据根目录，说明根本没跑在 AstrBot 里。
+        # 这种情况直接报出来，绝不偷偷写回插件安装目录。
+        raise RuntimeError(
+            "取不到 AstrBot 的 plugin_data 目录，无法确定数据存放位置"
+        )
     new = root / PLUGIN_NAME
-    try:
-        new.mkdir(parents=True, exist_ok=True)
-    except Exception:
-        LEGACY_DIR.mkdir(parents=True, exist_ok=True)
-        return LEGACY_DIR
+    new.mkdir(parents=True, exist_ok=True)
     _migrate(LEGACY_DIR, new)
     return new
 
