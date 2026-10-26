@@ -723,7 +723,7 @@ class BilibiliAronaPlugin(Star):
         if sheet_b64:
             tries.append(f"data:image/jpeg;base64,{sheet_b64}")
 
-        # 候选用老师的指定，再退系统默认，别一棵树上吊死
+        # 优先用账号主人指定的模型，再退系统默认，别一棵树上吊死
         cands: list[str] = []
         mine = str(self.config.get("vision_provider") or "").strip()
         if mine:
