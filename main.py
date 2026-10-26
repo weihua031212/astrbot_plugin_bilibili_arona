@@ -132,8 +132,6 @@ class BilibiliAronaPlugin(Star):
     async def initialize(self) -> None:
         """插件一加载就开始盯评论区，不用等账号主人先发命令。"""
         self.remember_umo(store.get_last_umo())
-        # 上次可能留了没跑掉的叫醒任务，开机先扫一遍，别让它一直挂着抢会话
-        await self._clear_stale_wakes()
         self.ensure_watcher()
         self.ensure_inbox_watcher()
         self.ensure_daily_watcher()
@@ -1403,6 +1401,22 @@ class BilibiliAronaPlugin(Star):
         now = _dt.datetime.now()
         today = now.date().isoformat()
         state = self._daily_state()
+
+        # 写日记前十分钟顺手清一次残留的叫醒任务。
+        # 这类任务留着会反复占会话，但没必要专门开个定时器盯着，
+        # 正好卡在写日记前面扫一遍就够，一天一次。
+        if self.config.get("diary_enabled", False):
+            try:
+                diary_hour = int(self.config.get("diary_hour", 21))
+            except Exception:
+                diary_hour = 21
+            now_min = now.hour * 60 + now.minute
+            target = diary_hour * 60 - 10
+            # 巡检五分钟一轮，落在这五分钟之内就算到点
+            if (now_min - target) % (24 * 60) < 5 and state.get("wake_clean") != today:
+                state["wake_clean"] = today
+                self._save_daily_state(state)
+                await self._clear_stale_wakes()
 
         if self.config.get("nurture_enabled", False) and now.hour >= int(self.config.get("nurture_hour", 20)):
             if state.get("nurture") != today:
