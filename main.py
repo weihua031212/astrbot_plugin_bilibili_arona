@@ -132,6 +132,9 @@ class BilibiliAronaPlugin(Star):
     async def initialize(self) -> None:
         """插件一加载就开始盯评论区，不用等账号主人先发命令。"""
         self.remember_umo(store.get_last_umo())
+        # 加载时先清一次：老版本升级上来的用户，上次可能留了没跑掉的叫醒任务，
+        # 不清的话要等到明晚日记前十分钟才自愈，这中间一直是卡着的
+        await self._clear_stale_wakes()
         self.ensure_watcher()
         self.ensure_inbox_watcher()
         self.ensure_daily_watcher()
