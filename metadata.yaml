@@ -4,7 +4,7 @@ desc: "自己出去刷 B 站，挑着看、在评论区说一句，觉得好就 
 short_desc: "自己刷 B 站、评一句、有人搭话先排队等你点头。"
 author: arona
 version: 0.4.0
-repo: ""
+repo: https://github.com/weihua031212/astrbot_plugin_bilibili_arona
 astrbot_version: ">=4.16,<5"
 support_platforms:
   - aiocqhttp
