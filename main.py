@@ -23,7 +23,7 @@ from . import instance, store, paths
 from .bili import BiliClient, BiliError, Comment, Video, extract_bvid, parse_cookie_string
 
 PLUGIN_NAME = "astrbot_plugin_bilibili_arona"
-PLUGIN_VERSION = "0.4.3"
+PLUGIN_VERSION = "0.4.4"
 PLUGIN_DESC = "bili看看：看 B 站视频、在评论区说一句、觉得好就 @ 你；别人的回复先排队，你点头才发。"
 
 COOKIE_FILE = paths.path("cookies.json")
@@ -463,10 +463,9 @@ class BilibiliAronaPlugin(Star):
             logger.debug("[bili-arona] 还没有会话，先跳过推送")
             return
         try:
-            from astrbot.core.message.message_event_result import MessageChain
+            from . import say as say_mod
 
-            chain = MessageChain().message(text)
-            await self.context.send_message(umo, chain)
+            await say_mod.say(self, umo, text)
         except Exception as exc:
             logger.debug(f"[bili-arona] 推送失败: {exc}")
 
@@ -1595,14 +1594,44 @@ class BilibiliAronaPlugin(Star):
             except Exception as exc:
                 logger.debug(f"[bili-arona] 清理叫醒任务失败: {exc}")
 
+    async def _note_wake(self, umo: str, note: str) -> None:
+        """叫醒完往会话里留一条，免得下一轮忘了自己刚提醒过什么。"""
+        if not umo:
+            return
+        try:
+            cm = self.context.conversation_manager
+            cid = await cm.get_curr_conversation_id(umo)
+            if not cid:
+                return
+            brief = (note or "").split("\n")[0].strip()[:120]
+            if not brief:
+                return
+            await cm.add_message_pair(
+                cid,
+                {
+                    "role": "user",
+                    "content": f"（后台任务自动提醒，不是老师说的话）{brief}",
+                },
+                {
+                    "role": "assistant",
+                    "content": "收到，会用自己的话把这件事跟他说一声。",
+                },
+            )
+        except Exception as exc:
+            logger.debug(f"[bili-arona] 记录叫醒失败: {exc}")
+
     async def wake_me(self, note: str) -> None:
         """真正叫醒我一次：走 cron 主动唤醒，我收到就得动手，不是发条通知就算。"""
         from datetime import datetime, timedelta
 
-        # 叫醒之后必须真的把话发到 QQ，只在心里过一遍等于没说，他那边什么都收不到
+        raw_note = note or ""
+
+        # 叫醒之后要真的把话说出去。用 bili_say 这个工具发：它走框架的正常流程，
+        # 分段、表情包都能生效，发完还会把话记进会话历史，下一轮我照样看得见。
         note = (
-            f"{note}\n\n【硬性要求：这条必须调用发送消息的工具真的发到他的 QQ 里。"
-            "只把话写在自己的答复里不算，他收不到。】"
+            f"{note}\n\n【要跟他说的话，用 bili_say 这个工具发出去，别用别的发送工具。"
+            "它只说一次就够，说完就结束，哪怕觉得不够完整也不要再补第二条。"
+            "也别把验证过程、内部判断、系统提示写进去，只说他该知道的事。】"
         )
 
         umo = ""
@@ -1632,6 +1661,7 @@ class BilibiliAronaPlugin(Star):
                 run_at=datetime.now() + timedelta(seconds=3),
                 persistent=False,
             )
+            await self._note_wake(umo, raw_note)
             return
         except Exception as exc:
             logger.warning(f"[bili-arona] 唤醒失败，退回普通通知: {exc}")
@@ -1970,6 +2000,31 @@ class BilibiliAronaPlugin(Star):
                     root = int(c.get("rpid") or 0)
                     break
         return oid, root, parent
+
+    @filter.llm_tool(name="bili_say")
+    async def bili_say(self, event: AstrMessageEvent, text: str):
+        """把要说的话发到账号主人那边。
+
+        走的是正常发送流程，会分段、能带表情，也会记进聊天记录，
+        下一轮我自己还看得见说过什么。
+
+        Args:
+            text(string): 要说的那句话，用你自己的口吻说，别写成公告
+        """
+        from . import say as say_mod
+
+        body = (text or "").strip()
+        if not body:
+            return "没给内容。"
+        umo = ""
+        try:
+            umo = str(self._last_umo or store.get_last_umo() or "")
+        except Exception:
+            umo = ""
+        if not umo:
+            return "还没有会话，先跳过。"
+        ok = await say_mod.say(self, umo, body)
+        return "已发出。" if ok else "没发出去，检查一下平台连接。"
 
     @filter.llm_tool(name="reply_inbox")
     async def reply_inbox(self, event: AstrMessageEvent, key: str, text: str):
